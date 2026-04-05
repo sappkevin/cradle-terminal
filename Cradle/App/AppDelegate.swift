@@ -4,20 +4,12 @@ import SwiftUI
 class AppDelegate: NSObject, NSApplicationDelegate {
     let settings = AppSettings()
     let sessionManager = SessionManager()
+    private var windowSessionMap: [NSWindow: UUID] = [:]
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = true
-
-        // Close the default SwiftUI window if one was created
-        // We manage windows ourselves
-        if NSApp.windows.isEmpty {
-            createAndShowWindow()
-        } else {
-            // Configure the existing window
-            if let window = NSApp.keyWindow ?? NSApp.windows.first {
-                configureWindow(window)
-            }
-        }
+        setupMenus()
+        createAndShowWindow()
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -30,6 +22,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
     }
+
+    // MARK: - Window Creation
 
     @discardableResult
     func createAndShowWindow(profile: Profile? = nil) -> NSWindow {
@@ -56,15 +50,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.contentView = hostingView
         window.title = profile?.name ?? "Cradle"
         window.tabbingMode = .preferred
+        window.tabbingIdentifier = "CradleTerminal"
         window.center()
         window.delegate = self
 
+        windowSessionMap[window] = session.id
         return window
     }
 
-    private func configureWindow(_ window: NSWindow) {
-        window.tabbingMode = .preferred
-    }
+    // MARK: - Tab Actions
 
     @objc func newTab(_ sender: Any?) {
         let newWindow = createTerminalWindow()
@@ -87,13 +81,128 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             newWindow.makeKeyAndOrderFront(nil)
         }
     }
+
+    @objc func openProfile(_ sender: NSMenuItem) {
+        guard let profile = sender.representedObject as? Profile else { return }
+        let newWindow = createTerminalWindow(profile: profile)
+        if let keyWindow = NSApp.keyWindow {
+            keyWindow.addTabbedWindow(newWindow, ordered: .above)
+            newWindow.makeKeyAndOrderFront(nil)
+        } else {
+            newWindow.makeKeyAndOrderFront(nil)
+        }
+    }
+
+    @objc func selectPreviousTab(_ sender: Any?) {
+        NSApp.keyWindow?.selectPreviousTab(sender)
+    }
+
+    @objc func selectNextTab(_ sender: Any?) {
+        NSApp.keyWindow?.selectNextTab(sender)
+    }
+
+    // MARK: - Menus
+
+    private func setupMenus() {
+        let mainMenu = NSMenu()
+
+        // App menu
+        let appMenuItem = NSMenuItem()
+        let appMenu = NSMenu()
+        appMenu.addItem(withTitle: "About Cradle", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        appMenu.addItem(NSMenuItem.separator())
+        appMenu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
+        appMenu.addItem(NSMenuItem.separator())
+        appMenu.addItem(withTitle: "Hide Cradle", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        let hideOthers = appMenu.addItem(withTitle: "Hide Others", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
+        hideOthers.keyEquivalentModifierMask = [.command, .option]
+        appMenu.addItem(withTitle: "Show All", action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
+        appMenu.addItem(NSMenuItem.separator())
+        appMenu.addItem(withTitle: "Quit Cradle", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenuItem.submenu = appMenu
+        mainMenu.addItem(appMenuItem)
+
+        // Shell menu
+        let shellMenuItem = NSMenuItem()
+        let shellMenu = NSMenu(title: "Shell")
+        shellMenu.addItem(withTitle: "New Tab", action: #selector(newTab), keyEquivalent: "t")
+        let claudeItem = NSMenuItem(title: "New Claude Tab", action: #selector(newClaudeTab), keyEquivalent: "t")
+        claudeItem.keyEquivalentModifierMask = [.command, .shift]
+        shellMenu.addItem(claudeItem)
+        shellMenu.addItem(NSMenuItem.separator())
+
+        // Profile submenu
+        let profilesItem = NSMenuItem(title: "Open Profile", action: nil, keyEquivalent: "")
+        let profilesMenu = NSMenu(title: "Open Profile")
+        for profile in settings.profiles {
+            let item = NSMenuItem(title: profile.name, action: #selector(openProfile), keyEquivalent: "")
+            item.representedObject = profile
+            profilesMenu.addItem(item)
+        }
+        if settings.profiles.isEmpty {
+            let emptyItem = NSMenuItem(title: "No Profiles", action: nil, keyEquivalent: "")
+            emptyItem.isEnabled = false
+            profilesMenu.addItem(emptyItem)
+        }
+        profilesItem.submenu = profilesMenu
+        shellMenu.addItem(profilesItem)
+
+        shellMenu.addItem(NSMenuItem.separator())
+        shellMenu.addItem(withTitle: "Close Tab", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        shellMenuItem.submenu = shellMenu
+        mainMenu.addItem(shellMenuItem)
+
+        // Edit menu
+        let editMenuItem = NSMenuItem()
+        let editMenu = NSMenu(title: "Edit")
+        editMenu.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        editMenuItem.submenu = editMenu
+        mainMenu.addItem(editMenuItem)
+
+        // View menu
+        let viewMenuItem = NSMenuItem()
+        let viewMenu = NSMenu(title: "View")
+        let prevTab = NSMenuItem(title: "Show Previous Tab", action: #selector(selectPreviousTab), keyEquivalent: "[")
+        prevTab.keyEquivalentModifierMask = [.command, .shift]
+        viewMenu.addItem(prevTab)
+        let nextTab = NSMenuItem(title: "Show Next Tab", action: #selector(selectNextTab), keyEquivalent: "]")
+        nextTab.keyEquivalentModifierMask = [.command, .shift]
+        viewMenu.addItem(nextTab)
+        viewMenuItem.submenu = viewMenu
+        mainMenu.addItem(viewMenuItem)
+
+        // Window menu
+        let windowMenuItem = NSMenuItem()
+        let windowMenu = NSMenu(title: "Window")
+        windowMenu.addItem(withTitle: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+        windowMenu.addItem(withTitle: "Zoom", action: #selector(NSWindow.performZoom(_:)), keyEquivalent: "")
+        windowMenu.addItem(NSMenuItem.separator())
+        windowMenu.addItem(withTitle: "Bring All to Front", action: #selector(NSApplication.arrangeInFront(_:)), keyEquivalent: "")
+        windowMenuItem.submenu = windowMenu
+        NSApp.windowsMenu = windowMenu
+        mainMenu.addItem(windowMenuItem)
+
+        NSApp.mainMenu = mainMenu
+    }
+
+    @objc private func showSettings() {
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+    }
 }
 
 extension AppDelegate: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
-        guard let window = notification.object as? NSWindow else { return }
-        // Clean up session when window closes
-        // We could track window-to-session mapping if needed
-        _ = window
+        guard let window = notification.object as? NSWindow,
+              let sessionID = windowSessionMap[window] else { return }
+        sessionManager.closeSession(id: sessionID)
+        windowSessionMap.removeValue(forKey: window)
+    }
+
+    func windowDidBecomeKey(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow,
+              let sessionID = windowSessionMap[window] else { return }
+        sessionManager.activeSessionID = sessionID
     }
 }

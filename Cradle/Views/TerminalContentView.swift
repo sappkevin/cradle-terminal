@@ -10,6 +10,10 @@ struct TerminalContentView: View {
             fontSize: fontSize,
             onTitleChange: { title in
                 session.title = title
+                // Update the window title to match
+                DispatchQueue.main.async {
+                    NSApp.keyWindow?.title = title
+                }
             }
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
