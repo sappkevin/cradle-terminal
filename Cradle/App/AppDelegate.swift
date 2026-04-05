@@ -244,7 +244,7 @@ extension AppDelegate: NSWindowDelegate {
     }
 
     // Enables the "+" button in the native macOS tab bar
-    func newWindowForTab(_ sender: Any?) -> NSWindow {
-        return createTerminalWindow()
+    @objc func newWindowForTab(_ sender: Any?) {
+        newTab(sender)
     }
 }
