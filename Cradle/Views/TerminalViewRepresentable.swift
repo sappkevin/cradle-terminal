@@ -4,11 +4,11 @@ import SwiftTerm
 struct TerminalViewRepresentable: NSViewRepresentable {
     let session: TerminalSession
     let fontSize: CGFloat
-    var onProcessExit: (() -> Void)?
-    var onTitleChange: ((String) -> Void)?
 
     func makeNSView(context: Context) -> LocalProcessTerminalView {
         let terminalView = LocalProcessTerminalView(frame: .zero)
+        context.coordinator.session = session
+        context.coordinator.terminalView = terminalView
         terminalView.processDelegate = context.coordinator
         terminalView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         terminalView.configureNativeColors()
@@ -35,28 +35,26 @@ struct TerminalViewRepresentable: NSViewRepresentable {
     func updateNSView(_ nsView: LocalProcessTerminalView, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onProcessExit: onProcessExit, onTitleChange: onTitleChange)
+        Coordinator()
     }
 
     class Coordinator: NSObject, LocalProcessTerminalViewDelegate {
-        var onProcessExit: (() -> Void)?
-        var onTitleChange: ((String) -> Void)?
+        weak var session: TerminalSession?
+        weak var terminalView: LocalProcessTerminalView?
 
-        init(onProcessExit: (() -> Void)?, onTitleChange: ((String) -> Void)?) {
-            self.onProcessExit = onProcessExit
-            self.onTitleChange = onTitleChange
+        func sizeChanged(source: LocalProcessTerminalView, newCols: Int, newRows: Int) {
+            guard let session else { return }
+            let title = session.title
+            session.updateWindowTitle(title, cols: newCols, rows: newRows)
         }
 
-        func sizeChanged(source: LocalProcessTerminalView, newCols: Int, newRows: Int) {}
-
         func setTerminalTitle(source: LocalProcessTerminalView, title: String) {
-            onTitleChange?(title)
+            guard let session, let tv = terminalView else { return }
+            session.updateWindowTitle(title, cols: tv.terminal.cols, rows: tv.terminal.rows)
         }
 
         func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
 
-        func processTerminated(source: TerminalView, exitCode: Int32?) {
-            onProcessExit?()
-        }
+        func processTerminated(source: TerminalView, exitCode: Int32?) {}
     }
 }

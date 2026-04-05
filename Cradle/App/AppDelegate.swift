@@ -57,6 +57,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.center()
         window.delegate = self
 
+        session.window = window
         windows.append(window)
         windowSessionMap[ObjectIdentifier(window)] = session.id
         return window

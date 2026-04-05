@@ -7,14 +7,7 @@ struct TerminalContentView: View {
     var body: some View {
         TerminalViewRepresentable(
             session: session,
-            fontSize: fontSize,
-            onTitleChange: { title in
-                session.title = title
-                // Update the window title to match
-                DispatchQueue.main.async {
-                    NSApp.keyWindow?.title = title
-                }
-            }
+            fontSize: fontSize
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
