@@ -7,6 +7,14 @@ The name is inspired by the Cradle from Westworld — the simulation environment
 ![macOS 14.0+](https://img.shields.io/badge/macOS-14.0%2B-blue)
 ![Swift 5.9](https://img.shields.io/badge/Swift-5.9-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
+[![Build & Release](https://github.com/sappkevin/cradle-terminal/actions/workflows/build-release.yml/badge.svg)](https://github.com/sappkevin/cradle-terminal/actions/workflows/build-release.yml)
+[![Latest Release](https://img.shields.io/github/v/release/sappkevin/cradle-terminal)](https://github.com/sappkevin/cradle-terminal/releases/latest)
+
+## Download
+
+Download the latest `.dmg` from the [Releases page](https://github.com/sappkevin/cradle-terminal/releases/latest).
+
+> **Note:** The app is ad-hoc signed. On first launch, macOS will warn about an unidentified developer — go to **System Settings > Privacy & Security** and click **Open Anyway**.
 
 ## Features
 
