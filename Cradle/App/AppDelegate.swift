@@ -4,11 +4,18 @@ import SwiftUI
 class AppDelegate: NSObject, NSApplicationDelegate {
     let settings = AppSettings()
     let sessionManager = SessionManager()
-    private var windowSessionMap: [NSWindow: UUID] = [:]
+    private var windows: [NSWindow] = []
+    private var windowSessionMap: [ObjectIdentifier: UUID] = [:]
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = true
         setupMenus()
+
+        // Close any windows SwiftUI may have created
+        for window in NSApp.windows {
+            window.close()
+        }
+
         createAndShowWindow()
     }
 
@@ -51,11 +58,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.title = profile?.name ?? "Cradle"
         window.tabbingMode = .preferred
         window.tabbingIdentifier = "CradleTerminal"
+        window.isReleasedWhenClosed = false
         window.center()
         window.delegate = self
 
-        windowSessionMap[window] = session.id
+        // Retain the window
+        windows.append(window)
+        windowSessionMap[ObjectIdentifier(window)] = session.id
         return window
+    }
+
+    private func removeWindow(_ window: NSWindow) {
+        if let sessionID = windowSessionMap[ObjectIdentifier(window)] {
+            sessionManager.closeSession(id: sessionID)
+        }
+        windowSessionMap.removeValue(forKey: ObjectIdentifier(window))
+        windows.removeAll { $0 === window }
     }
 
     // MARK: - Tab Actions
@@ -194,19 +212,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension AppDelegate: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
-        guard let window = notification.object as? NSWindow,
-              let sessionID = windowSessionMap[window] else { return }
-        sessionManager.closeSession(id: sessionID)
-        windowSessionMap.removeValue(forKey: window)
+        guard let window = notification.object as? NSWindow else { return }
+        // Defer removal to avoid dealloc during animation
+        DispatchQueue.main.async { [weak self] in
+            self?.removeWindow(window)
+        }
     }
 
     func windowDidBecomeKey(_ notification: Notification) {
         guard let window = notification.object as? NSWindow,
-              let sessionID = windowSessionMap[window] else { return }
+              let sessionID = windowSessionMap[ObjectIdentifier(window)] else { return }
         sessionManager.activeSessionID = sessionID
     }
 
-    // This enables the "+" button in the native macOS tab bar
+    // Enables the "+" button in the native macOS tab bar
     func newWindowForTab(_ sender: Any?) -> NSWindow {
         return createTerminalWindow()
     }
