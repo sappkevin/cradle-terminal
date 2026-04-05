@@ -6,16 +6,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let sessionManager = SessionManager()
     private var windows: [NSWindow] = []
     private var windowSessionMap: [ObjectIdentifier: UUID] = [:]
+    private var settingsWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = true
         setupMenus()
-
-        // Close any windows SwiftUI may have created
-        for window in NSApp.windows {
-            window.close()
-        }
-
         createAndShowWindow()
     }
 
@@ -62,7 +57,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.center()
         window.delegate = self
 
-        // Retain the window
         windows.append(window)
         windowSessionMap[ObjectIdentifier(window)] = session.id
         return window
@@ -117,6 +111,28 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func selectNextTab(_ sender: Any?) {
         NSApp.keyWindow?.selectNextTab(sender)
+    }
+
+    // MARK: - Settings
+
+    @objc func showSettings(_ sender: Any?) {
+        if let existing = settingsWindow {
+            existing.makeKeyAndOrderFront(nil)
+            return
+        }
+        let hostingView = NSHostingView(rootView: SettingsView(settings: settings))
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 450, height: 300),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        window.contentView = hostingView
+        window.title = "Settings"
+        window.isReleasedWhenClosed = false
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        settingsWindow = window
     }
 
     // MARK: - Menus
@@ -182,6 +198,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // View menu
         let viewMenuItem = NSMenuItem()
         let viewMenu = NSMenu(title: "View")
+        viewMenu.addItem(withTitle: "Show Tab Bar", action: #selector(NSWindow.toggleTabBar(_:)), keyEquivalent: "")
+        viewMenu.addItem(NSMenuItem.separator())
         let prevTab = NSMenuItem(title: "Show Previous Tab", action: #selector(selectPreviousTab), keyEquivalent: "[")
         prevTab.keyEquivalentModifierMask = [.command, .shift]
         viewMenu.addItem(prevTab)
@@ -204,16 +222,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         NSApp.mainMenu = mainMenu
     }
-
-    @objc private func showSettings() {
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-    }
 }
 
 extension AppDelegate: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         guard let window = notification.object as? NSWindow else { return }
-        // Defer removal to avoid dealloc during animation
+        if window === settingsWindow {
+            settingsWindow = nil
+            return
+        }
         DispatchQueue.main.async { [weak self] in
             self?.removeWindow(window)
         }
