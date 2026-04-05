@@ -205,4 +205,9 @@ extension AppDelegate: NSWindowDelegate {
               let sessionID = windowSessionMap[window] else { return }
         sessionManager.activeSessionID = sessionID
     }
+
+    // This enables the "+" button in the native macOS tab bar
+    func newWindowForTab(_ sender: Any?) -> NSWindow {
+        return createTerminalWindow()
+    }
 }
