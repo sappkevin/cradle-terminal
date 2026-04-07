@@ -8,6 +8,21 @@ class AppSettings: ObservableObject {
     @AppStorage("autoCommand") var autoCommand: String = ""
     @AppStorage("profilesJSON") var profilesJSON: String = "[]"
 
+    // MARK: - New feature settings
+
+    @AppStorage("claudeCLIPath") var claudeCLIPath: String = ""
+    @AppStorage("replayBufferSizeMB") var replayBufferSizeMB: Int = 10
+
+    // MARK: - Feature toggles (default on)
+
+    @AppStorage("shellIntegrationEnabled") var shellIntegrationEnabled: Bool = true
+    @AppStorage("instantReplayEnabled") var instantReplayEnabled: Bool = true
+    @AppStorage("replayExportEnabled") var replayExportEnabled: Bool = true
+    @AppStorage("claudeDocGenEnabled") var claudeDocGenEnabled: Bool = true
+    @AppStorage("aiInspectorEnabled") var aiInspectorEnabled: Bool = true
+    @AppStorage("copyfileHelpersEnabled") var copyfileHelpersEnabled: Bool = true
+    @AppStorage("intellisenseEnabled") var intellisenseEnabled: Bool = true
+
     var resolvedShell: String {
         shell.isEmpty ? ShellEnvironment.defaultShell() : shell
     }

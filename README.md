@@ -18,12 +18,37 @@ Download the latest `.dmg` from the [Releases page](https://github.com/sappkevin
 
 ## Features
 
+### Terminal basics
 - **Native macOS tabs** — uses AppKit's `NSWindow.addTabbedWindow` for real OS-level tab bar with "+" button
-- **Default directory** — every new tab starts in your configured directory (set via Settings)
+- **Default directory** — every new tab starts in your configured directory
 - **Auto-run command** — automatically execute a command (e.g. `claude`) when a tab opens
-- **Launch profiles** — save named profiles with directory + command combos for quick access
-- **Dynamic window titles** — shows terminal title and size (e.g. `user@host:~ — 80x24`), just like Terminal.app
-- **Full terminal emulation** — powered by [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm) with 256-color support and native macOS colors
+- **Launch profiles** — save named profiles with directory + command combos
+- **Dynamic window titles** — shows terminal title and size (e.g. `user@host:~ — 80x24`)
+- **Full terminal emulation** — [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm), 256 colors, native macOS colors
+
+### Shell integration (iTerm2-style)
+- **OSC 133 prompt marks** — Cradle tracks every command's start, end, exit code, and cwd
+- **OSC 7 cwd tracking** — current directory follows the shell, even after `cd`
+- **`copyfile` / `pastefile`** — wrap `scp -r` with glob support so you don't have to remember scp syntax
+- **Inline autosuggestions** — fish-style ghost text in zsh (via bundled `zsh-autosuggestions` hook)
+- One-click install from **Settings → Features → Install Shell Integration…**
+
+### Instant Replay
+- **Time-indexed scrollback** — every byte from the PTY is recorded into a size-capped ring buffer
+- **Command-anchored scrubber** — jump between previous commands with `⌘⇧R`
+- **Export** to **Markdown** (default), plain text, or JSON (`⌘E` inside the replay view)
+- **Generate Documentation with Claude** — pipe the transcript through the `claude` CLI and get back a Markdown runbook (summary, prerequisites, steps, troubleshooting)
+
+### AI Prompt Inspector
+- Right-sidebar panel that shells out to the `claude` CLI for:
+  - **Improve** — rewrite a prompt to be clearer and more structured
+  - **Evaluate** — score on clarity, specificity, hallucination resistance, consistency
+  - **Reduce hallucinations** — add factual-accuracy guardrails
+  - **Increase consistency** — constrain output for deterministic responses
+- Copy results or send straight to the active terminal
+
+### Per-feature toggles
+Every major feature above is gated by a toggle in **Settings → Features**, including a master switch for shell integration, instant replay, replay export, doc generation, AI inspector, copyfile helpers, and inline autosuggestions. Disabling a feature avoids spinning up its services entirely.
 
 ## Keyboard Shortcuts
 
@@ -35,6 +60,8 @@ Download the latest `.dmg` from the [Releases page](https://github.com/sappkevin
 | `Cmd+Shift+[` | Previous tab |
 | `Cmd+Shift+]` | Next tab |
 | `Cmd+,` | Settings |
+| `Cmd+Shift+R` | Open Instant Replay |
+| `Cmd+E` | Export replay (inside Replay view) |
 
 ## Requirements
 
@@ -114,11 +141,29 @@ Cradle/
 
 Open **Settings** (`Cmd+,`) to configure:
 
-- **Default Directory** — where new tabs open (defaults to home directory)
-- **Shell** — leave empty to auto-detect, or specify a path (e.g. `/bin/zsh`)
-- **Auto-run Command** — command to run on tab open (e.g. `claude`)
-- **Font Size** — terminal font size (10–24pt)
-- **Profiles** — saved name + directory + command combos, accessible from Shell menu
+**General tab**
+- **Default Directory**, **Shell**, **Auto-run Command**, **Font Size**
+
+**Features tab**
+- **AI Prompt Inspector sidebar** + **Claude CLI path** (auto-detected if blank)
+- **Generate documentation from replays**
+- **Shell integration** (OSC 133/7 command + cwd tracking) + **Install Shell Integration…** button
+- **copyfile / pastefile helpers**
+- **Inline autosuggestions** (zsh ghost text)
+- **Instant replay** + **Allow exporting replays** + **Buffer size (MB)**
+
+**Profiles tab**
+- Saved name + directory + command combos, accessible from the Shell menu
+
+### Installing shell integration
+Click **Settings → Features → Install Shell Integration…** to copy `cradle.zsh` / `cradle.bash` / `cradle.fish` into `~/.config/cradle/`. Then add one line to your rc file:
+
+```bash
+# ~/.zshrc
+[[ -f ~/.config/cradle/cradle.zsh ]] && source ~/.config/cradle/cradle.zsh
+```
+
+After sourcing, every command you run will be tracked with cwd + exit code, replay anchors will land at command boundaries, and `copyfile foo.txt user@host:~/` will Just Work.
 
 ## License
 

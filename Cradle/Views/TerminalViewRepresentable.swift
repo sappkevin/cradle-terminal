@@ -4,16 +4,38 @@ import SwiftTerm
 struct TerminalViewRepresentable: NSViewRepresentable {
     let session: TerminalSession
     let fontSize: CGFloat
+    let settings: AppSettings
 
-    func makeNSView(context: Context) -> LocalProcessTerminalView {
-        let terminalView = LocalProcessTerminalView(frame: .zero)
+    func makeNSView(context: Context) -> CradleTerminalView {
+        let terminalView = CradleTerminalView(frame: .zero)
         context.coordinator.session = session
         context.coordinator.terminalView = terminalView
         terminalView.processDelegate = context.coordinator
         terminalView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         terminalView.configureNativeColors()
 
-        let env = ShellEnvironment.shellEnvironment()
+        // Wire instant replay before the process starts.
+        if settings.instantReplayEnabled {
+            let recorder = ReplayRecorder(maxBytes: settings.replayBufferSizeMB * 1024 * 1024)
+            session.replayRecorder = recorder
+            terminalView.onDataReceived = { [weak recorder] slice in
+                recorder?.append(slice)
+            }
+        }
+
+        // Wire shell integration: OSC 133 via registerOscHandler, OSC 7 via delegate.
+        if settings.shellIntegrationEnabled {
+            let weakSession = session
+            terminalView.terminal.registerOscHandler(code: 133) { payload in
+                if let event = ShellIntegrationParser.decodeOSC133(payload) {
+                    DispatchQueue.main.async {
+                        weakSession.handleShellEvent(event)
+                    }
+                }
+            }
+        }
+
+        let env = ShellEnvironment.shellEnvironment(settings: settings)
         terminalView.startProcess(
             executable: session.shell,
             args: ["-l"],
@@ -32,7 +54,7 @@ struct TerminalViewRepresentable: NSViewRepresentable {
         return terminalView
     }
 
-    func updateNSView(_ nsView: LocalProcessTerminalView, context: Context) {}
+    func updateNSView(_ nsView: CradleTerminalView, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -40,12 +62,11 @@ struct TerminalViewRepresentable: NSViewRepresentable {
 
     class Coordinator: NSObject, LocalProcessTerminalViewDelegate {
         weak var session: TerminalSession?
-        weak var terminalView: LocalProcessTerminalView?
+        weak var terminalView: CradleTerminalView?
 
         func sizeChanged(source: LocalProcessTerminalView, newCols: Int, newRows: Int) {
             guard let session else { return }
-            let title = session.title
-            session.updateWindowTitle(title, cols: newCols, rows: newRows)
+            session.updateWindowTitle(session.title, cols: newCols, rows: newRows)
         }
 
         func setTerminalTitle(source: LocalProcessTerminalView, title: String) {
@@ -53,7 +74,12 @@ struct TerminalViewRepresentable: NSViewRepresentable {
             session.updateWindowTitle(title, cols: tv.terminal.cols, rows: tv.terminal.rows)
         }
 
-        func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
+        func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {
+            guard let session, let dir = directory, !dir.isEmpty else { return }
+            DispatchQueue.main.async {
+                session.updateCwd(dir)
+            }
+        }
 
         func processTerminated(source: TerminalView, exitCode: Int32?) {}
     }

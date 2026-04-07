@@ -40,7 +40,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let cmd = profile?.command ?? (settings.autoCommand.isEmpty ? nil : settings.autoCommand)
         let session = sessionManager.createSession(cwd: cwd, shell: shell, autoCommand: cmd)
 
-        let contentView = TerminalContentView(session: session, fontSize: CGFloat(settings.fontSize))
+        let contentView = TerminalContentView(session: session, settings: settings, fontSize: CGFloat(settings.fontSize))
         let hostingView = NSHostingView(rootView: contentView)
 
         let window = NSWindow(
