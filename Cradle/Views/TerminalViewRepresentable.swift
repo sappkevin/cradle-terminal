@@ -13,6 +13,9 @@ struct TerminalViewRepresentable: NSViewRepresentable {
         terminalView.processDelegate = context.coordinator
         terminalView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         terminalView.configureNativeColors()
+        terminalView.allowMouseReporting = settings.mouseReportingEnabled
+        // Highlight URLs on hover, open with a plain click (no ⌘ needed).
+        terminalView.linkHighlightMode = .hover
 
         // Wire instant replay before the process starts.
         if settings.instantReplayEnabled {

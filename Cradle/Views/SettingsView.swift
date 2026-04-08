@@ -47,6 +47,9 @@ struct GeneralSettingsView: View {
                 Slider(value: $settings.fontSize, in: 10...24, step: 1)
             }
 
+            Toggle("Forward mouse events to TUIs (disables text selection)",
+                   isOn: $settings.mouseReportingEnabled)
+
             Picker("Appearance", selection: $settings.appearance) {
                 Text("System").tag("system")
                 Text("Light").tag("light")

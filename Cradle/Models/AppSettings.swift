@@ -26,6 +26,10 @@ class AppSettings: ObservableObject {
     /// "system", "light", or "dark"
     @AppStorage("appearance") var appearance: String = "system"
 
+    /// When false (default), click+drag always selects text. Turn on if you
+    /// need mouse-driven TUIs to receive click events.
+    @AppStorage("mouseReportingEnabled") var mouseReportingEnabled: Bool = false
+
     var resolvedShell: String {
         shell.isEmpty ? ShellEnvironment.defaultShell() : shell
     }
