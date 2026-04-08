@@ -79,11 +79,35 @@ jobs:
           ditto -c -k --keepParent \
             "build/Build/Products/Release/Cradle.app" \
             "$RUNNER_TEMP/Cradle.zip"
-          xcrun notarytool submit "$RUNNER_TEMP/Cradle.zip" \
+
+          # Submit and capture the submission ID so we can always print the log.
+          SUBMIT_OUTPUT=$(xcrun notarytool submit "$RUNNER_TEMP/Cradle.zip" \
             --apple-id "$APPLE_ID" \
             --password "$APPLE_APP_PASSWORD" \
             --team-id "$TEAM_ID" \
-            --wait
+            --wait \
+            --output-format json) || SUBMIT_FAILED=1
+          echo "$SUBMIT_OUTPUT"
+          SUBMISSION_ID=$(echo "$SUBMIT_OUTPUT" | python3 -c "import sys, json; print(json.loads(sys.stdin.read()).get('id',''))" 2>/dev/null || echo "")
+
+          if [ -n "$SUBMISSION_ID" ]; then
+            echo "===== Notarization log ====="
+            xcrun notarytool log "$SUBMISSION_ID" \
+              --apple-id "$APPLE_ID" \
+              --password "$APPLE_APP_PASSWORD" \
+              --team-id "$TEAM_ID" || true
+          fi
+
+          if [ -n "${SUBMIT_FAILED:-}" ]; then
+            exit 1
+          fi
+
+          STATUS=$(echo "$SUBMIT_OUTPUT" | python3 -c "import sys, json; print(json.loads(sys.stdin.read()).get('status',''))" 2>/dev/null || echo "")
+          if [ "$STATUS" != "Accepted" ]; then
+            echo "Notarization status: $STATUS"
+            exit 1
+          fi
+
           xcrun stapler staple "build/Build/Products/Release/Cradle.app"
 
       - name: Create DMG
