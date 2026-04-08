@@ -23,6 +23,9 @@ class AppSettings: ObservableObject {
     @AppStorage("copyfileHelpersEnabled") var copyfileHelpersEnabled: Bool = true
     @AppStorage("intellisenseEnabled") var intellisenseEnabled: Bool = true
 
+    /// "system", "light", or "dark"
+    @AppStorage("appearance") var appearance: String = "system"
+
     var resolvedShell: String {
         shell.isEmpty ? ShellEnvironment.defaultShell() : shell
     }

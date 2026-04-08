@@ -10,8 +10,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = true
+        applyAppearance()
+        // Re-apply when the user changes the setting in SettingsView.
+        UserDefaults.standard.addObserver(self, forKeyPath: "appearance", options: .new, context: nil)
         setupMenus()
         createAndShowWindow()
+    }
+
+    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
+        if keyPath == "appearance" { applyAppearance() }
+    }
+
+    private func applyAppearance() {
+        switch settings.appearance {
+        case "light": NSApp.appearance = NSAppearance(named: .aqua)
+        case "dark":  NSApp.appearance = NSAppearance(named: .darkAqua)
+        default:      NSApp.appearance = nil // follow system
+        }
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {

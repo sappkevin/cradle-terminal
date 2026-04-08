@@ -46,6 +46,13 @@ struct GeneralSettingsView: View {
                 Text("Font Size: \(Int(settings.fontSize))")
                 Slider(value: $settings.fontSize, in: 10...24, step: 1)
             }
+
+            Picker("Appearance", selection: $settings.appearance) {
+                Text("System").tag("system")
+                Text("Light").tag("light")
+                Text("Dark").tag("dark")
+            }
+            .pickerStyle(.segmented)
         }
         .padding()
     }
