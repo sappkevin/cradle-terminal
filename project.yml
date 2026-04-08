@@ -13,9 +13,11 @@ settings:
     CURRENT_PROJECT_VERSION: "2"
     SWIFT_VERSION: "5.9"
     MACOSX_DEPLOYMENT_TARGET: "14.0"
-    CODE_SIGN_IDENTITY: "-"
-    CODE_SIGN_STYLE: Automatic
+    CODE_SIGN_IDENTITY: "Developer ID Application"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: H5A65VHQU7
     PRODUCT_BUNDLE_IDENTIFIER: com.cradleterm.app
+    ENABLE_HARDENED_RUNTIME: YES
 
 packages:
   SwiftTerm:
@@ -42,3 +44,8 @@ targets:
       - package: SwiftTerm
     entitlements:
       path: Cradle/Cradle.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
+        com.apple.security.cs.allow-unsigned-executable-memory: true
+        com.apple.security.cs.disable-library-validation: true
+        com.apple.security.cs.allow-jit: true
