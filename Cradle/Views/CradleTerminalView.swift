@@ -10,9 +10,42 @@ final class CradleTerminalView: LocalProcessTerminalView {
     /// before being fed to the terminal emulator.
     var onDataReceived: ((ArraySlice<UInt8>) -> Void)?
 
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        registerForDraggedTypes([.fileURL])
+    }
+    required init?(coder: NSCoder) { fatalError() }
+
     override func dataReceived(slice: ArraySlice<UInt8>) {
         onDataReceived?(slice)
         super.dataReceived(slice: slice)
+    }
+
+    // MARK: - Drag & drop files
+    //
+    // When the user drags files onto the terminal, paste their shell-escaped
+    // absolute paths (space-separated) at the cursor. This matches Terminal.app
+    // and iTerm2 behavior and lets you drop a .jpg into a `claude` session.
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        sender.draggingPasteboard.canReadObject(forClasses: [NSURL.self], options: nil) ? .copy : []
+    }
+
+    override func prepareForDragOperation(_ sender: NSDraggingInfo) -> Bool { true }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        guard let urls = sender.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL],
+              !urls.isEmpty else { return false }
+        let escaped = urls.map { Self.shellEscape($0.path) }.joined(separator: " ")
+        let bytes = Array(escaped.utf8)
+        send(source: self, data: bytes[...])
+        return true
+    }
+
+    /// Single-quote the path and escape any embedded single quotes. Safe for
+    /// bash/zsh/fish.
+    private static func shellEscape(_ path: String) -> String {
+        "'" + path.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
     // MARK: - Pointer cursor over links

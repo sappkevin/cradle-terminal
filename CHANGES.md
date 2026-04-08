@@ -2,6 +2,11 @@
 
 All notable changes to Cradle are documented here. Versions follow [SemVer](https://semver.org/).
 
+## [1.1.5] — 2026-04-08
+
+### Added
+- **Drag & drop files into the terminal.** Dropping files from Finder pastes their shell-escaped absolute paths at the cursor, so you can drag a `.jpg` into a `claude` session for analysis.
+
 ## [1.1.4] — 2026-04-08
 
 ### Fixed
@@ -70,6 +75,7 @@ Initial release.
 - Dynamic window titles showing the terminal title and size.
 - `./scripts/build.sh` + GitHub Actions workflow producing an ad-hoc signed `.dmg`.
 
+[1.1.5]: https://github.com/sappkevin/cradle-terminal/releases/tag/v1.1.5
 [1.1.4]: https://github.com/sappkevin/cradle-terminal/releases/tag/v1.1.4
 [1.1.3]: https://github.com/sappkevin/cradle-terminal/releases/tag/v1.1.3
 [1.1.2]: https://github.com/sappkevin/cradle-terminal/releases/tag/v1.1.2
