@@ -12,7 +12,7 @@ struct SettingsView: View {
             ProfilesSettingsView(settings: settings)
                 .tabItem { Label("Profiles", systemImage: "list.bullet") }
         }
-        .frame(width: 520, height: 420)
+        .frame(width: 640, height: 460)
     }
 }
 
