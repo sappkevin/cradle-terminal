@@ -121,6 +121,36 @@ jobs:
             "Cradle.dmg" \
             "build/Build/Products/Release/Cradle.app"
 
+      - name: Sign DMG
+        run: |
+          codesign --sign "Developer ID Application" \
+            --timestamp \
+            Cradle.dmg
+          codesign -dv --verbose=2 Cradle.dmg
+
+      - name: Notarize DMG
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          set -e
+          DMG_SUBMIT=$(xcrun notarytool submit Cradle.dmg \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_PASSWORD" \
+            --team-id "$TEAM_ID" \
+            --wait \
+            --output-format json)
+          echo "$DMG_SUBMIT"
+          DMG_STATUS=$(echo "$DMG_SUBMIT" | python3 -c "import sys, json; print(json.loads(sys.stdin.read()).get('status',''))")
+          if [ "$DMG_STATUS" != "Accepted" ]; then
+            DMG_ID=$(echo "$DMG_SUBMIT" | python3 -c "import sys, json; print(json.loads(sys.stdin.read()).get('id',''))")
+            xcrun notarytool log "$DMG_ID" \
+              --apple-id "$APPLE_ID" \
+              --password "$APPLE_APP_PASSWORD" \
+              --team-id "$TEAM_ID" || true
+            exit 1
+          fi
+
       - name: Staple DMG
         run: xcrun stapler staple Cradle.dmg
 
