@@ -12,9 +12,9 @@ The name is inspired by the Cradle from Westworld — the simulation environment
 
 ## Download
 
-Download the latest `.dmg` from the [Releases page](https://github.com/sappkevin/cradle-terminal/releases/latest).
+Download the latest `.dmg` from the [Releases page](https://github.com/sappkevin/cradle-terminal/releases/latest). Releases are signed with a Developer ID certificate and notarized by Apple, so they install without Gatekeeper warnings.
 
-> **Note:** The app is ad-hoc signed. On first launch, macOS will warn about an unidentified developer — go to **System Settings > Privacy & Security** and click **Open Anyway**.
+See [CHANGES.md](CHANGES.md) for release notes.
 
 ## Features
 
@@ -25,6 +25,9 @@ Download the latest `.dmg` from the [Releases page](https://github.com/sappkevin
 - **Launch profiles** — save named profiles with directory + command combos
 - **Dynamic window titles** — shows terminal title and size (e.g. `user@host:~ — 80x24`)
 - **Full terminal emulation** — [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm), 256 colors, native macOS colors
+- **Text selection** — click+drag selects, ⌘C copies. Disable per-tab mouse reporting for TUIs in Settings.
+- **Clickable URLs** — hover highlights URLs, plain-click opens them in the default browser
+- **Appearance picker** — System / Light / Dark in Settings → General
 
 ### Shell integration (iTerm2-style)
 - **OSC 133 prompt marks** — Cradle tracks every command's start, end, exit code, and cwd
