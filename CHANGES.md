@@ -2,6 +2,11 @@
 
 All notable changes to Cradle are documented here. Versions follow [SemVer](https://semver.org/).
 
+## [1.1.6] — 2026-04-09
+
+### Fixed
+- Clicking a local path in the terminal (e.g. `/Users/you/foo`) no longer tries to open it in Finder. A `LinkFilteringDelegate` proxy now gates `requestOpenLink` to http, https, and mailto schemes only. SwiftTerm still auto-detects URLs; we just ignore clicks on non-browser-safe targets.
+
 ## [1.1.5] — 2026-04-08
 
 ### Added
@@ -75,6 +80,7 @@ Initial release.
 - Dynamic window titles showing the terminal title and size.
 - `./scripts/build.sh` + GitHub Actions workflow producing an ad-hoc signed `.dmg`.
 
+[1.1.6]: https://github.com/sappkevin/cradle-terminal/releases/tag/v1.1.6
 [1.1.5]: https://github.com/sappkevin/cradle-terminal/releases/tag/v1.1.5
 [1.1.4]: https://github.com/sappkevin/cradle-terminal/releases/tag/v1.1.4
 [1.1.3]: https://github.com/sappkevin/cradle-terminal/releases/tag/v1.1.3

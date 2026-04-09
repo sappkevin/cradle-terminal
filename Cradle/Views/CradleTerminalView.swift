@@ -10,9 +10,18 @@ final class CradleTerminalView: LocalProcessTerminalView {
     /// before being fed to the terminal emulator.
     var onDataReceived: ((ArraySlice<UInt8>) -> Void)?
 
+    /// Proxy delegate that forwards everything to `self` (the LocalProcess
+    /// delegate implementations live on `LocalProcessTerminalView`) except
+    /// `requestOpenLink`, which we filter so local paths aren't handed to
+    /// NSWorkspace.
+    private var linkFilter: LinkFilteringDelegate?
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         registerForDraggedTypes([.fileURL])
+        let filter = LinkFilteringDelegate(wrapped: self)
+        self.linkFilter = filter
+        self.terminalDelegate = filter
     }
     required init?(coder: NSCoder) { fatalError() }
 
@@ -69,6 +78,45 @@ final class CradleTerminalView: LocalProcessTerminalView {
         )
         addTrackingArea(area)
         trackingArea = area
+    }
+}
+
+/// Proxy that forwards all TerminalViewDelegate methods to the wrapped
+/// LocalProcessTerminalView, except `requestOpenLink`, which filters out
+/// non-http(s)/mailto schemes so a random `/Users/foo` implicit link doesn't
+/// trigger NSWorkspace.
+final class LinkFilteringDelegate: NSObject, TerminalViewDelegate {
+    private weak var wrapped: LocalProcessTerminalView?
+    init(wrapped: LocalProcessTerminalView) { self.wrapped = wrapped }
+
+    func send(source: TerminalView, data: ArraySlice<UInt8>) {
+        wrapped?.send(source: source, data: data)
+    }
+    func scrolled(source: TerminalView, position: Double) {
+        wrapped?.scrolled(source: source, position: position)
+    }
+    func rangeChanged(source: TerminalView, startY: Int, endY: Int) {
+        wrapped?.rangeChanged(source: source, startY: startY, endY: endY)
+    }
+    func setTerminalTitle(source: TerminalView, title: String) {
+        wrapped?.setTerminalTitle(source: source, title: title)
+    }
+    func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {
+        wrapped?.sizeChanged(source: source, newCols: newCols, newRows: newRows)
+    }
+    func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {
+        wrapped?.hostCurrentDirectoryUpdate(source: source, directory: directory)
+    }
+    func clipboardCopy(source: TerminalView, content: Data) {
+        wrapped?.clipboardCopy(source: source, content: content)
+    }
+
+    /// Filter: only open real URLs in the browser.
+    func requestOpenLink(source: TerminalView, link: String, params: [String: String]) {
+        guard let url = URL(string: link), let scheme = url.scheme?.lowercased() else { return }
+        let allowed: Set<String> = ["http", "https", "mailto"]
+        guard allowed.contains(scheme) else { return }
+        NSWorkspace.shared.open(url)
     }
 }
 
