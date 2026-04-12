@@ -2,6 +2,11 @@
 
 All notable changes to Cradle are documented here. Versions follow [SemVer](https://semver.org/).
 
+## [1.1.7] — 2026-04-11
+
+### Fixed
+- **Auto-scroll during text selection.** Dragging past the top or bottom edge of the terminal now scrolls automatically. SwiftTerm has the callback wired but never creates the timer; Cradle installs its own NSEvent local monitor + repeating timer to fill the gap.
+
 ## [1.1.6] — 2026-04-09
 
 ### Fixed
@@ -80,6 +85,7 @@ Initial release.
 - Dynamic window titles showing the terminal title and size.
 - `./scripts/build.sh` + GitHub Actions workflow producing an ad-hoc signed `.dmg`.
 
+[1.1.7]: https://github.com/sappkevin/cradle-terminal/releases/tag/v1.1.7
 [1.1.6]: https://github.com/sappkevin/cradle-terminal/releases/tag/v1.1.6
 [1.1.5]: https://github.com/sappkevin/cradle-terminal/releases/tag/v1.1.5
 [1.1.4]: https://github.com/sappkevin/cradle-terminal/releases/tag/v1.1.4

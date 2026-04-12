@@ -22,6 +22,7 @@ final class CradleTerminalView: LocalProcessTerminalView {
         let filter = LinkFilteringDelegate(wrapped: self)
         self.linkFilter = filter
         self.terminalDelegate = filter
+        installAutoScrollMonitor()
     }
     required init?(coder: NSCoder) { fatalError() }
 
@@ -55,6 +56,67 @@ final class CradleTerminalView: LocalProcessTerminalView {
     /// bash/zsh/fish.
     private static func shellEscape(_ path: String) -> String {
         "'" + path.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
+
+    // MARK: - Auto-scroll during text selection
+    //
+    // SwiftTerm defines a scrollingTimerElapsed callback but never creates the
+    // Timer, so dragging past the top/bottom during selection doesn't scroll.
+    // We work around this with an NSEvent local monitor + a repeating timer.
+
+    private var autoScrollTimer: Timer?
+    private var dragMonitor: Any?
+
+    func installAutoScrollMonitor() {
+        dragMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDragged, .leftMouseUp]) { [weak self] event in
+            self?.handleDragEvent(event)
+            return event
+        }
+    }
+
+    private func handleDragEvent(_ event: NSEvent) {
+        if event.type == .leftMouseUp {
+            stopAutoScroll()
+            return
+        }
+        // Only act if the drag is happening in our window.
+        guard event.window === self.window else { return }
+        let point = convert(event.locationInWindow, from: nil)
+        let margin: CGFloat = 0
+        if point.y < margin {
+            // Mouse above the top of the view (flipped: y < 0 means above).
+            let distance = max(1, Int((margin - point.y) / 10))
+            startAutoScroll(lines: -distance)
+        } else if point.y > bounds.height - margin {
+            // Mouse below the bottom.
+            let distance = max(1, Int((point.y - bounds.height + margin) / 10))
+            startAutoScroll(lines: distance)
+        } else {
+            stopAutoScroll()
+        }
+    }
+
+    private func startAutoScroll(lines: Int) {
+        // If already scrolling in the same direction, keep going.
+        if autoScrollTimer != nil { return }
+        autoScrollTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            if lines < 0 {
+                self.scrollUp(lines: -lines)
+            } else {
+                self.scrollDown(lines: lines)
+            }
+        }
+    }
+
+    private func stopAutoScroll() {
+        autoScrollTimer?.invalidate()
+        autoScrollTimer = nil
+    }
+
+    deinit {
+        if let dragMonitor { NSEvent.removeMonitor(dragMonitor) }
+        autoScrollTimer?.invalidate()
     }
 
     // MARK: - Pointer cursor over links
